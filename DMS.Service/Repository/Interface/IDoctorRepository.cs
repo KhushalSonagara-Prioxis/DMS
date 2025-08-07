@@ -7,17 +7,15 @@ namespace DMS.Service.Repository.Interface;
 public interface IDoctorRepository
 {
     // public List<DoctorResponseModel> GetAllDoctors();
-    
-    
-    public DoctorResponseModel GetDoctorsBySid(string sid);
-    
-    public DoctorResponseModel InsertDoctor(DoctorRequestModelWithoutDoctorSid data);
-    
-    public DoctorResponseModel UpdateDoctor(DoctorRequestModelWithoutDoctorSid data, string sid);
-    
-    public DoctorResponseModel DeleteDoctor(string sid);
-    
-    public List<DoctorResponseModel> GetDoctorsWithSearchAndPaging(string searchTerm, int pageNumber, int pageSize, out int totalRecords);
-    
-    
+
+
+    public Task<DoctorResponseModel> GetDoctorsBySidAsync(string sid);
+    public Task<DoctorResponseModel> InsertDoctorAsync(DoctorRequestModelWithoutDoctorSid data);
+    public Task<DoctorResponseModel> UpdateDoctorAsync(DoctorRequestModelWithoutDoctorSid data, string sid);
+    public Task<DoctorResponseModel> DeleteDoctorAsync(string sid);
+
+    public Task<(List<DoctorResponseModel>, int)> GetDoctorsWithSearchAndPagingAsync(string searchKeyword,
+        int page, int size);
+
+
 }
