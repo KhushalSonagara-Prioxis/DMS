@@ -1,9 +1,14 @@
 using AutoMapper;
-using DMS.Common.Common;
+using DMS.Common;
+using DMS.Model.CommonModel;
+using DMS.Model.SpDbContext;
 using DMS.Models.Models.MyDoctorsDB;
 using DMS.Models.RequestModel;
 using DMS.Models.ResponceModel;
 using DMS.Service.Repository.Interface;
+using DMS.Service.RepositoryFactory;
+using DMS.Service.UnitOfWork;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -14,13 +19,109 @@ public class DoctorRepository : IDoctorRepository
     private readonly DoctorsDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<DoctorRepository> _logger;
+    private readonly DoctorManagementSpContext  _spContext;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DoctorRepository(DoctorsDbContext context, IMapper mapper, ILogger<DoctorRepository> logger)
+    public DoctorRepository(DoctorsDbContext context, IMapper mapper, ILogger<DoctorRepository> logger, DoctorManagementSpContext spContext, IUnitOfWork unitOfWork)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _spContext = spContext;
+        _unitOfWork = unitOfWork;
     }
+    
+    
+    public async Task<Page> List(Dictionary<string, object> parameters)
+    {
+        var xmlParam = CommonHelper.DictionaryToXml(parameters, "Search");
+        string sqlQuery = "sp_SearchDoctorsByXML {0}";
+        object[] param = { xmlParam };
+        var result = await _spContext.ExecutreStoreProcedureResultList(sqlQuery, param);
+        return result;
+    }
+    
+    public async Task<DoctorResponseModel?> GetByDoctorsSID(string userSID)
+    {
+        var doctor = await _unitOfWork.GetRepository<Doctor>().SingleOrDefaultAsync(x =>
+            x.DoctorSid == userSID && x.Status != (int)Status.Deleted);
+        return _mapper.Map<DoctorResponseModel>(doctor);
+    }
+    
+    public async Task<DoctorResponseModel> CreateDoctor(DoctorRequestModelWithoutDoctorSid data)
+        {
+            try
+            {
+                var doctor = _mapper.Map<Doctor>(data);
+                doctor.DoctorSid = "DOC" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                doctor.Status = (int)Status.Active;
+
+                await _unitOfWork.GetRepository<Doctor>().InsertAsync(doctor);
+                await _unitOfWork.CommitAsync();
+
+                //
+                // var newDoctor2 = new UserDB
+                // {
+                //     UserSid = string.Concat("US", Guid.NewGuid().ToString()),
+                //     FirstName = model.FirstName + "2",
+                //     LastName = model.LastName + "2",
+                //     Email = "2" + model.Email,
+                //     Status = (int)StatusTypeDB.Active,
+                //     CreatedDateTime = DateTime.UtcNow,
+                //     LastModifiedDateTime = DateTime.UtcNow
+                // };
+                //
+                //
+                // await _unitOfWork.GetRepository<Doctor>().InsertAsync(newDoctor2);
+                // await _unitOfWork.CommitAsyncWithTransaction();
+
+
+                return _mapper.Map<DoctorResponseModel>(doctor);
+            }
+            catch (Exception e)
+            {
+                
+                Console.WriteLine(e);
+                throw new HttpStatusCodeException(500);
+            }
+        }
+    
+    public async Task<DoctorResponseModel> UpdateDoctor(string DoctorSID, DoctorRequestModelWithoutDoctorSid data)
+    {
+        var doctor = await _unitOfWork.GetRepository<Doctor>().SingleOrDefaultAsync(x =>
+            x.DoctorSid == DoctorSID && x.Status != (int)Status.Deleted);
+
+        if (doctor == null) return null;
+    
+        _mapper.Map(data, doctor);
+        
+        _unitOfWork.GetRepository<Doctor>().Update(doctor);
+        await _unitOfWork.CommitAsync();
+
+        return _mapper.Map<DoctorResponseModel>(doctor);;
+    }
+    
+    public async Task<bool> DeleteDoctor(string doctorSID)
+    {
+        var doctors = await _unitOfWork.GetRepository<Doctor>().GetAllAsync();
+        var doctor = doctors
+            .FirstOrDefault(u => u.DoctorSid == doctorSID && u.Status != (int)Status.Deleted);
+
+        if (doctor == null) return false;
+
+        doctor.Status = (int)Status.Deleted;
+        doctor.ModifiedAt = DateTime.UtcNow;
+
+        _context.Doctors.Update(doctor);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    
+    
+    
+    
+    
 
     public async Task<DoctorResponseModel> GetDoctorsBySidAsync(string sid)
     {

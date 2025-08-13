@@ -1,3 +1,4 @@
+using DMS.Model.CommonModel;
 using DMS.Models.Models.MyDoctorsDB;
 using DMS.Models.RequestModel;
 using DMS.Models.ResponceModel;
@@ -8,7 +9,16 @@ public interface IDoctorRepository
 {
     // public List<DoctorResponseModel> GetAllDoctors();
 
-
+    Task<Page> List(Dictionary<string, object> parameters);
+    Task<DoctorResponseModel?> GetByDoctorsSID(string userSID);
+    Task<DoctorResponseModel> CreateDoctor(DoctorRequestModelWithoutDoctorSid data);
+    Task<DoctorResponseModel> UpdateDoctor(string DoctorSID, DoctorRequestModelWithoutDoctorSid data);
+    Task<bool> DeleteDoctor(string doctorSID);
+    
+    
+    
+    
+    
     public Task<DoctorResponseModel> GetDoctorsBySidAsync(string sid);
     public Task<DoctorResponseModel> InsertDoctorAsync(DoctorRequestModelWithoutDoctorSid data);
     public Task<DoctorResponseModel> UpdateDoctorAsync(DoctorRequestModelWithoutDoctorSid data, string sid);

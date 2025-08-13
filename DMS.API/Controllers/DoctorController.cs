@@ -1,15 +1,18 @@
 // Updated DoctorController.cs
+
+using DMS.Model.CommonModel;
 using DMS.Models.RequestModel;
 using DMS.Models.ResponceModel;
 using DMS.Service.Repository.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace DMS.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DoctorController : ControllerBase
+public class DoctorController:BaseController
 {
     private readonly IDoctorRepository _doctorRepository;
     private readonly ILogger<DoctorController> _logger;
@@ -19,8 +22,10 @@ public class DoctorController : ControllerBase
         _doctorRepository = doctorRepository;
         _logger = logger;
     }
+    
+    
 
-    [HttpGet("searchandpaging")]
+    [HttpGet("SearchAndPaging")]
     public async Task<IActionResult> SearchDoctors([FromQuery] string? SearchingKeyword, [FromQuery] int page = 1, [FromQuery] int size = 5)
     {
         _logger.LogInformation("SearchDoctors called at {Time} | Term: {SearchingKeyword}, Page: {Page}, Size: {Size}", DateTime.UtcNow, SearchingKeyword, page, size);

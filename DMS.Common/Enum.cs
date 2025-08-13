@@ -1,4 +1,4 @@
-namespace DMS.Common.Common;
+namespace DMS.Common;
 
 public enum Status 
 {

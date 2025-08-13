@@ -1,5 +1,6 @@
 using System.Reflection;
 using DMS.API.Helper;
+using DMS.Model.SpDbContext;
 using DMS.Models.Models.MyDoctorsDB;
 using DMS.Service.Repository.Implementation;
 using DMS.Service.Repository.Interface;
@@ -15,6 +16,22 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var connectionString = builder.Configuration.GetConnectionString("DBConnection");
+        
+        //SPCONTEXT CONFIGURATION
+        builder.Services.AddDbContext<DoctorManagementSpContext>(options =>
+        {
+            options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+            {
+
+                sqlOptions.EnableRetryOnFailure();
+
+            });
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+            options.EnableSensitiveDataLogging(true);
+        }, ServiceLifetime.Transient);
+        
+        // Register the UserService AND Unit OF Work
+        UnitOfWorkServiceCollectionExtentions.AddUnitOfWork<DoctorsDbContext>(builder.Services);
         
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         builder.Services.AddControllers()
